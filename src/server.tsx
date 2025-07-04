@@ -27,7 +27,7 @@ const forkServer = (ctx: Context, config: Config) =>
     proxy.once('dispose', reject);
   });
 
-const MESSAGE_REGEX = /^<@?(.*?)>\s*(.*)$/;
+const MESSAGE_REGEX = /^<@?(.*?)>\s*([\S\s]*)$/;
 
 export async function server(ctx: Context, config: Config) {
   const logger = ctx.logger(name);
@@ -41,6 +41,7 @@ export async function server(ctx: Context, config: Config) {
   if (config.notification.enable) {
     // https://github.com/tobymao/18xx/blob/master/lib/hooks.rb
     server.post(config.notification.path, async (ptx, _next) => {
+      // <@12345> Your Turn in 1830 "" (Auction Round 1) http://18xx.games/game/123456
       const { text = '' } = ptx.request.body || {};
       const result = MESSAGE_REGEX.exec(text);
       if (!result) {
