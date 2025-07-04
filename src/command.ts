@@ -29,10 +29,23 @@ export function command(ctx: Context, config: Config) {
 
   ctx
     .command('18xx.bind <id>', '绑定账号')
+    .option('force', '-f', { authority: 4 })
     .usage('id 是个人资料页地址栏 profile 后面的数字')
     .before(checkSessionMiddleware)
-    .action(async ({ session }, id) => {
+    .action(async ({ session, options }, id) => {
       if (Number(id)) {
+        if (!options.force) {
+          const profiles = await ctx.database.get(name, { id: Number(id) });
+          if (profiles.length) {
+            if (profiles.length > 1) {
+              logger.error(`${id} 绑定了多个账号`, profiles, session);
+            }
+            // 已经绑定过了，检查是否为同一个用户
+            if (profiles[0].userId !== session.userId) {
+              return `${id} 已被其他用户绑定`;
+            }
+          }
+        }
         const result = await ctx.database.upsert(name, [
           {
             id: Number(id),
