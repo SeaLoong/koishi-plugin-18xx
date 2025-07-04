@@ -44,12 +44,12 @@ export async function server(ctx: Context, config: Config) {
       const { text = '' } = ptx.request.body || {};
       const result = MESSAGE_REGEX.exec(text);
       if (!result) {
-        logger.error('Webhook格式错误');
+        logger.error('Webhook格式错误', text);
         return (ptx.status = 400);
       }
       const [, webhookId, message] = result;
       if (!Number(webhookId) || !message) {
-        logger.error('Webhook格式错误');
+        logger.error('Webhook格式错误', text);
         return (ptx.status = 400);
       }
       const profiles = await ctx.database.get(name, { id: Number(webhookId) });
