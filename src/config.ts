@@ -1,6 +1,8 @@
 import { Server } from '@koishijs/plugin-server';
 import { Schema } from 'koishi';
 
+export type SendMode = 'private-only' | 'private-guild' | 'guild-only';
+
 export const name = '18xx';
 
 export const inject = {
@@ -21,6 +23,7 @@ export interface Config {
       guildIds: string[];
       defaultBotIds: string[];
       botIds: string[];
+      sendMode: 'private-only' | 'private-guild' | 'guild-only';
     }[];
   };
 }
@@ -52,6 +55,13 @@ export const Config: Schema<Config> = Schema.object({
         botIds: Schema.array(Schema.string())
           .default([])
           .description('允许发送通知的机器人，如果先前的机器人都无法工作，将会尝试使用后面的机器人发送通知，为空表示允许所有机器人发送通知'),
+        sendMode: Schema.union([
+          Schema.const('private-only').description('仅私聊'),
+          Schema.const('private-guild').description('私聊优先，失败则群聊'),
+          Schema.const('guild-only').description('仅群聊'),
+        ])
+          .default('private-guild')
+          .description('通知发送方式'),
       })
     )
       .default([])

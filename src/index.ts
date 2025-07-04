@@ -16,6 +16,10 @@ export function apply(ctx: Context, config: Config) {
       type: 'boolean',
       initial: true,
     },
+    interval: {
+      type: 'integer',
+      initial: 30,
+    },
   });
 
   command(ctx, config);

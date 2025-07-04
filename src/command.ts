@@ -31,6 +31,7 @@ export function command(ctx: Context, config: Config) {
     .command('18xx.bind <id>', '绑定账号')
     .option('force', '-f', { authority: 4 })
     .usage('id 是个人资料页地址栏 profile 后面的数字')
+    .usage('需要先绑定账号，并在个人资料页 Webhook User ID 中填入你的 id')
     .before(checkSessionMiddleware)
     .action(async ({ session, options }, id) => {
       if (Number(id)) {
@@ -81,6 +82,7 @@ export function command(ctx: Context, config: Config) {
 
   ctx
     .command('18xx.list', '列出已绑定的账号')
+    .usage('需要先绑定账号，并在个人资料页 Webhook User ID 中填入你的 id')
     .alias('18xx.ls')
     .action(async ({ session }) => {
       const profiles = await ctx.database.get(name, { userId: session.userId });
@@ -92,19 +94,16 @@ export function command(ctx: Context, config: Config) {
 
   ctx
     .command('18xx.on', '开启通知')
-    .usage('需要先绑定账号，并在个人资料页 webhook_user_id 中填入你的 id')
+    .usage('需要先绑定账号，并在个人资料页 Webhook User ID 中填入你的 id')
     .action(async ({ session }) => {
       const profiles = await ctx.database.get(name, { userId: session.userId });
       if (!profiles.length) {
         return '你还没有绑定账号';
       }
-      const result = await ctx.database.upsert(
+      await ctx.database.upsert(
         name,
         profiles.map((p) => ({ ...p, notify: true }))
       );
-      if (result.matched > 1) {
-        return `开启了${result.matched || 0}个账号的通知`;
-      }
       return '通知已开启';
     });
 
@@ -113,13 +112,44 @@ export function command(ctx: Context, config: Config) {
     if (!profiles.length) {
       return '你还没有绑定账号';
     }
-    const result = await ctx.database.upsert(
+    await ctx.database.upsert(
       name,
       profiles.map((p) => ({ ...p, notify: false }))
     );
-    if (result.matched > 1) {
-      return `关闭了${result.matched || 0}个账号的通知`;
-    }
     return '通知已关闭';
   });
+
+  ctx
+    .command('18xx.config <key> <value>', '修改设置')
+    .usage('需要先绑定账号，并在个人资料页 Webhook User ID 中填入你的 id')
+    .action(async ({ session }, key, value) => {
+      const profiles = await ctx.database.get(name, { userId: session.userId });
+      if (!profiles.length) {
+        return '你还没有绑定账号';
+      }
+      if (typeof key !== 'string' || typeof value !== 'string') {
+        return '参数错误';
+      }
+      let val: any = value;
+      switch (key) {
+        case 'notify':
+          val = value !== '0' && Boolean(value);
+          break;
+        case 'interval':
+          val = Math.max(10, Math.min(600, Number(value)));
+          break;
+      }
+      try {
+        const result = await ctx.database.upsert(
+          name,
+          profiles.map((p) => ({ ...p, [key]: val }))
+        );
+        if (result.matched) {
+          return `设置已修改：${key}=${val}`;
+        }
+      } catch (e) {
+        logger.error('Cannot update config:', e?.message || e);
+        return `未能修改设置：${key}=${val}`;
+      }
+    });
 }

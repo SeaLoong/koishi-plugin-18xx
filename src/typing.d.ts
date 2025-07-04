@@ -22,4 +22,5 @@ interface Profile {
   botId: string;
   guildId: string;
   notify: boolean;
+  interval: number;
 }
