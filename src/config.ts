@@ -1,3 +1,4 @@
+import { Server } from '@koishijs/plugin-server';
 import { Schema } from 'koishi';
 
 export const name = '18xx';
@@ -8,6 +9,9 @@ export const inject = {
 };
 
 export interface Config {
+  server: {
+    enable?: boolean;
+  } & Partial<Server.Config>;
   notification: {
     enable: boolean;
     path: string;
@@ -22,6 +26,20 @@ export interface Config {
 }
 
 export const Config: Schema<Config> = Schema.object({
+  server: Schema.intersect([
+    Schema.object({
+      enable: Schema.boolean().default(false).description('自定义服务器'),
+    }),
+    Schema.union([
+      Schema.intersect([
+        Schema.object({
+          enable: Schema.const(true).required(),
+        }),
+        Server.Config,
+      ]),
+      Schema.object({}),
+    ]),
+  ]),
   notification: Schema.object({
     enable: Schema.boolean().default(true).description('启用通知'),
     path: Schema.string().default('/18xx').description('Webhook 监听路径'),

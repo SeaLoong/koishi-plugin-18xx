@@ -1,15 +1,46 @@
+import Server from '@koishijs/plugin-server';
 import type { Bot, Context } from 'koishi';
 import { Config, name } from './config';
 import { Profile } from './typing';
 
+class ForkServer extends Server {}
+
+const createProxyCtx = (ctx: Context) =>
+  new Proxy(ctx, {
+    get(target, p, receiver) {
+      const val = Reflect.get(target, p, receiver);
+      if (p === 'name' && name !== val) {
+        return `${name} > ${val}`;
+      }
+      return val;
+    },
+  });
+
+const forkServer = (ctx: Context, config: Config) =>
+  new Promise<typeof ctx.server>((resolve, reject) => {
+    const proxy = createProxyCtx(ctx.isolate('server'));
+    proxy.plugin(ForkServer, {
+      ...ctx.server.config,
+      ...config.server,
+    });
+    proxy.once('server/ready', () => resolve(proxy.server));
+    proxy.once('dispose', reject);
+  });
+
 const MESSAGE_REGEX = /^<@?(.*?)>\s*(.*)$/;
 
-export function server(ctx: Context, config: Config) {
+export async function server(ctx: Context, config: Config) {
   const logger = ctx.logger(name);
+
+  let server = ctx.server;
+  if (config.server.port && config.server.port !== server.port) {
+    logger.info('Server port is different from koishi Server port, fork server.');
+    server = await forkServer(ctx, config);
+  }
 
   if (config.notification.enable) {
     // https://github.com/tobymao/18xx/blob/master/lib/hooks.rb
-    ctx.server.post(config.notification.path, async (ptx, _next) => {
+    server.post(config.notification.path, async (ptx, _next) => {
       const { text = '' } = ptx.request.body || {};
       const result = MESSAGE_REGEX.exec(text);
       if (!result) {

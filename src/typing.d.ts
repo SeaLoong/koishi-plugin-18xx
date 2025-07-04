@@ -1,27 +1,14 @@
-import {} from 'koishi';
 import {} from '@koishijs/plugin-server';
+import {} from 'koishi';
 
 declare module 'koishi' {
-  interface Context {
-    github?: GitHub;
-  }
+  interface Context {}
 
-  interface Events {
-    'github/webhook'(event: string, payload: CommonPayload): void;
-  }
+  interface Events {}
 
-  interface User {
-    github: {
-      accessToken: string;
-      refreshToken: string;
-    };
-  }
+  interface User {}
 
-  interface Channel {
-    github: {
-      webhooks: Dict<EventFilter>;
-    };
-  }
+  interface Channel {}
 
   interface Tables {
     '18xx': Profile;
