@@ -28,7 +28,7 @@ export function command(ctx: Context, config: Config) {
   };
 
   ctx
-    .command('18xx.bind <id>', '绑定 18xx.games 账号')
+    .command('18xx.bind <id>', '绑定账号')
     .usage('id 是个人资料页地址栏 profile 后面的数字')
     .before(checkSessionMiddleware)
     .action(async ({ session }, id) => {
@@ -53,12 +53,12 @@ export function command(ctx: Context, config: Config) {
     });
 
   ctx
-    .command('18xx.unbind <id>', '取消绑定 18xx.games 账号')
+    .command('18xx.unbind <id>', '取消绑定账号')
     .usage('id 是个人资料页地址栏 profile 后面的数字')
     .action(async ({ session }, id) => {
       const result = await ctx.database.remove(name, { id: Number(id), userId: session.userId });
       if (!result.matched) {
-        return '你还没有绑定 18xx.games 账号';
+        return '你还没有绑定账号';
       }
       if (result.removed) {
         return `${id} 解绑成功`;
@@ -67,23 +67,23 @@ export function command(ctx: Context, config: Config) {
     });
 
   ctx
-    .command('18xx.list', '列出已绑定的 18xx.games 账号')
+    .command('18xx.list', '列出已绑定的账号')
     .alias('18xx.ls')
     .action(async ({ session }) => {
       const profiles = await ctx.database.get(name, { userId: session.userId });
       if (!profiles.length) {
-        return '你还没有绑定 18xx.games 账号';
+        return '你还没有绑定账号';
       }
       return `当前已绑定${profiles.length}个账号:\n${profiles.map((p) => `${p.id}`).join('\n')}`;
     });
 
   ctx
-    .command('18xx.on', '开启 18xx.games 通知')
-    .usage('需要先绑定 18xx.games 账号，并在个人资料页 webhook_user_id 中填入你的 id')
+    .command('18xx.on', '开启通知')
+    .usage('需要先绑定账号，并在个人资料页 webhook_user_id 中填入你的 id')
     .action(async ({ session }) => {
       const profiles = await ctx.database.get(name, { userId: session.userId });
       if (!profiles.length) {
-        return '你还没有绑定 18xx.games 账号';
+        return '你还没有绑定账号';
       }
       const result = await ctx.database.upsert(
         name,
@@ -95,10 +95,10 @@ export function command(ctx: Context, config: Config) {
       return '通知已开启';
     });
 
-  ctx.command('18xx.off', '关闭 18xx.games 通知').action(async ({ session }) => {
+  ctx.command('18xx.off', '关闭通知').action(async ({ session }) => {
     const profiles = await ctx.database.get(name, { userId: session.userId });
     if (!profiles.length) {
-      return '你还没有绑定 18xx.games 账号';
+      return '你还没有绑定账号';
     }
     const result = await ctx.database.upsert(
       name,
