@@ -1,6 +1,5 @@
 import Server from '@koishijs/plugin-server';
 import type { Bot, Context } from 'koishi';
-import { LRUCache } from 'lru-cache';
 import { Config, name, SendMode } from './config';
 import { Profile } from './typing';
 
@@ -36,7 +35,7 @@ const GAME_REGEX = /18xx\.games\/game\/(\d+)/;
  * key: webhookId + userId + gameId
  * value: timestamp
  */
-const sendCache = new LRUCache<string, { ts: number; cancel?: () => void }>({ max: 1000 });
+const sendCache = new Map<string, { ts: number; cancel?: () => void }>();
 
 export async function server(ctx: Context, config: Config) {
   const logger = ctx.logger(name);
@@ -107,7 +106,8 @@ export async function server(ctx: Context, config: Config) {
               }
               if (result?.length > 0) {
                 logger.info('通知发送成功', result, sendCacheKey, message);
-                sendCache.set(sendCacheKey, { ts: Date.now() });
+                const cancel = ctx.setTimeout(() => sendCache.delete(sendCacheKey), profile.interval * 1000);
+                sendCache.set(sendCacheKey, { ts: Date.now(), cancel });
                 return true;
               }
             } catch (e) {
@@ -132,7 +132,6 @@ export async function server(ctx: Context, config: Config) {
             sendCache.set(sendCacheKey, { ts: lastTimestamp, cancel });
             return;
           }
-          sendCache.delete(sendCacheKey);
         }
         if (!config.notification.items.length) {
           // 如果没有配置，直接发送通知
